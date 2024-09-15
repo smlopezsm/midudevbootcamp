@@ -1,0 +1,29 @@
+sequenceDiagram
+    participant user as Usuario
+    participant browser as Navegador
+    participant server as Servidor
+
+    user->>browser: Accede a https://studies.cs.helsinki.fi/exampleapp/spa
+    browser->>server: GET https://studies.cs.helsinki.fi/exampleapp/spa
+    activate server
+    server-->>browser: HTML de la aplicación SPA
+    deactivate server
+
+    browser->>server: GET https://studies.cs.helsinki.fi/exampleapp/main.css
+    activate server
+    server-->>browser: Archivo CSS
+    deactivate server
+
+    browser->>server: GET https://studies.cs.helsinki.fi/exampleapp/spa.js
+    activate server
+    server-->>browser: Archivo JavaScript para SPA
+    deactivate server
+
+    Note right of browser: El navegador ejecuta el JavaScript para cargar y gestionar la SPA
+
+    browser->>server: GET https://studies.cs.helsinki.fi/exampleapp/data.json
+    activate server
+    server-->>browser: JSON con las notas
+    deactivate server
+
+    Note right of browser: El navegador renderiza las notas desde el JSON sin recargar la página
