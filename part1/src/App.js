@@ -1,18 +1,13 @@
-import './App.css';
-import Mensaje from './Mensaje.js';
+import "./App.css";
+import Mensaje from "./Mensaje";
 
-
-const Description = () => {
-  return <p>Esta es la app del curso</p>
-}
-
-function App() {
+const App = () => {
   return (
     <div className="App">
-      <Mensaje color='red' message='estamos trabajando en un curso de react' />
-      <Description />
+      <Mensaje color="red" message="adadf" />
+      <Mensaje color="green" message="kokoko" />
     </div>
   );
-}
+};
 
 export default App;
