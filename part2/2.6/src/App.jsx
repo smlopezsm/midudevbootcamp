@@ -17,6 +17,23 @@ const Filter = ({ filter, setFilter }) => {
   );
 };
 
+const Notification = ({ message }) => {
+  console.log("Error Message: ", message);
+  if (message === null) {
+    return null;
+  }
+
+  return <div className="success">{message}</div>;
+};
+
+const NotificationError = ({ message }) => {
+  if (message === null) {
+    return null;
+  }
+
+  return <div className="errorM">{message}</div>;
+};
+
 const Add = ({
   persons,
   newName,
@@ -24,6 +41,8 @@ const Add = ({
   setPersons,
   setNewName,
   setNewNumber,
+  setSuccessMessage,
+  setErrorMessage,
 }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -33,27 +52,38 @@ const Add = ({
     });
 
     if (exists) {
-      // const confirmUpdate = window.confirm(
-      //   `${newName} is already added, replace the old number with a new one?`
-      // );
-      // console.log("Confirmación después del confirm:", confirmUpdate);
-      //if (confirmUpdate) { I dont know why but window.confirm is not working
-      mutatePerson(`http://localhost:3001/persons/${exists.id}`, toadd)
-        .then((updatedPerson) => {
-          setPersons((prevPersons) =>
-            prevPersons.map((person) =>
-              person.id === exists.id ? updatedPerson : person
-            )
-          );
+      const confirmUpdate = window.confirm(
+        `${newName} is already added, replace the old number with a new one?`
+      );
+      if (confirmUpdate) {
+        mutatePerson(`http://localhost:3001/persons/${exists.id}`, toadd)
+          .then((updatedPerson) => {
+            setPersons((prevPersons) =>
+              prevPersons.map((person) =>
+                person.id === exists.id ? updatedPerson : person
+              )
+            );
+            setSuccessMessage(`Updated ${updatedPerson.name} successfully!`);
+            setTimeout(() => setSuccessMessage(null), 3000);
+          })
+          .catch((error) => {
+            console.log("Error en actualizacion: ", error); // Verificar el error
+            setErrorMessage(`Error updating`);
+            setTimeout(() => setErrorMessage(null), 5000);
+          });
+      }
+    } else {
+      createPerson(toadd)
+        .then((newPerson) => {
+          setPersons((prevPersons) => prevPersons.concat(newPerson));
+          setSuccessMessage(`Added ${newPerson.name} successfully!`);
+          setTimeout(() => setSuccessMessage(null), 3000);
         })
         .catch((error) => {
-          console.error("Error updating person:", error);
+          console.log("Error en añadir: ", error); // Verificar el error
+          setErrorMessage(`Error adding`);
+          setTimeout(() => setErrorMessage(null), 5000);
         });
-      //}
-    } else {
-      createPerson(toadd).then((newPerson) => {
-        setPersons((prevPersons) => prevPersons.concat(newPerson));
-      });
     }
   };
 
@@ -104,7 +134,8 @@ const App = () => {
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
   const [filter, setFilter] = useState("");
-
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
   useEffect(() => {
     getAllPersons().then((persons) => {
       setPersons(persons);
@@ -118,9 +149,15 @@ const App = () => {
   const handleDelete = (id) => {
     const confirmDelete = window.confirm(`Sure to delete?`);
     if (confirmDelete) {
-      deletePerson(id).then(() => {
-        setPersons(persons.filter((p) => p.id !== id));
-      });
+      deletePerson(id)
+        .then(() => {
+          setPersons(persons.filter((p) => p.id !== id));
+        })
+        .catch((error) => {
+          console.log("Error en eliminación: ", error); // Verificar el error
+          setErrorMessage(`Error deleting`);
+          setTimeout(() => setErrorMessage(null), 5000);
+        });
     }
   };
 
@@ -129,6 +166,8 @@ const App = () => {
   }
   return (
     <div>
+      <NotificationError message={errorMessage} />
+      <Notification message={successMessage} />
       <h2>Phonebook</h2>
       <Filter filter={filter} setFilter={setFilter} />
       <Add
@@ -138,8 +177,14 @@ const App = () => {
         setPersons={setPersons}
         setNewName={setNewName}
         setNewNumber={setNewNumber}
+        setSuccessMessage={setSuccessMessage}
+        setErrorMessage={setErrorMessage}
       />
-      <Nums filtered={filtered} handleDelete={handleDelete} />
+      <Nums
+        filtered={filtered}
+        handleDelete={handleDelete}
+        setErrorMessage={setErrorMessage}
+      />
     </div>
   );
 };
