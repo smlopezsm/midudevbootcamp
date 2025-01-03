@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import { getAllPersons } from "./services/persons/getAllPersons";
+import { createPerson } from "./services/createPerson";
+import { deletePerson } from "./services/persons/deletePerson";
+import { mutatePerson } from "./services/persons/mutatePerson";
 
 /* eslint-disable react/prop-types */
 const Filter = ({ filter, setFilter }) => {
   const handleShowFilter = (e) => {
     setFilter(e.target.value);
   };
-
   return (
     <div>
       {" "}
@@ -26,14 +28,33 @@ const Add = ({
   const handleSubmit = (e) => {
     e.preventDefault();
     const toadd = { name: newName, number: newNumber };
-    const repetido = persons.some((person) => person.name === toadd.name);
-    if (repetido) {
-      window.alert(`${toadd.name} ya existe`);
-      return;
+    const exists = persons.find((person) => {
+      return person.name.trim().toLowerCase() === newName.trim().toLowerCase();
+    });
+
+    if (exists) {
+      // const confirmUpdate = window.confirm(
+      //   `${newName} is already added, replace the old number with a new one?`
+      // );
+      // console.log("Confirmación después del confirm:", confirmUpdate);
+      //if (confirmUpdate) { I dont know why but window.confirm is not working
+      mutatePerson(`http://localhost:3001/persons/${exists.id}`, toadd)
+        .then((updatedPerson) => {
+          setPersons((prevPersons) =>
+            prevPersons.map((person) =>
+              person.id === exists.id ? updatedPerson : person
+            )
+          );
+        })
+        .catch((error) => {
+          console.error("Error updating person:", error);
+        });
+      //}
+    } else {
+      createPerson(toadd).then((newPerson) => {
+        setPersons((prevPersons) => prevPersons.concat(newPerson));
+      });
     }
-    setPersons([...persons, toadd]);
-    setNewName("");
-    setNewNumber("");
   };
 
   const handleChange = (e) => {
@@ -62,7 +83,7 @@ const Add = ({
   );
 };
 
-const Nums = ({ filtered }) => {
+const Nums = ({ filtered, handleDelete }) => {
   return (
     <>
       <h2>Numbers</h2>
@@ -70,6 +91,7 @@ const Nums = ({ filtered }) => {
         {filtered.map((p) => (
           <li key={p.name}>
             {p.name} {p.number}
+            <button onClick={() => handleDelete(p.id)}>delete</button>
           </li>
         ))}
       </ul>
@@ -84,15 +106,23 @@ const App = () => {
   const [filter, setFilter] = useState("");
 
   useEffect(() => {
-    axios.get("http://localhost:3001/persons").then((json) => {
-      const { data } = json;
-      setPersons(data);
+    getAllPersons().then((persons) => {
+      setPersons(persons);
     });
   }, []);
 
   const filtered = filter
     ? persons.filter((person) => person.name.includes(filter))
     : persons;
+
+  const handleDelete = (id) => {
+    const confirmDelete = window.confirm(`Sure to delete?`);
+    if (confirmDelete) {
+      deletePerson(id).then(() => {
+        setPersons(persons.filter((p) => p.id !== id));
+      });
+    }
+  };
 
   if (persons.length === 0) {
     return "No hay personas";
@@ -109,7 +139,7 @@ const App = () => {
         setNewName={setNewName}
         setNewNumber={setNewNumber}
       />
-      <Nums filtered={filtered} />
+      <Nums filtered={filtered} handleDelete={handleDelete} />
     </div>
   );
 };
